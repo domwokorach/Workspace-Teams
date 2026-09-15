@@ -11,7 +11,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { requireCurrentUser } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { getDefaultWorkspace } from "@/lib/workspace";
 import { formatDistanceToNow } from "date-fns";
@@ -30,7 +31,8 @@ const ACTIVITY_LABEL: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const user = await requireCurrentUser();
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
   const workspace = await getDefaultWorkspace(user.id).catch(() => null);
 
   if (!workspace) {

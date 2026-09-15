@@ -1,19 +1,46 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/cookies";
+import { verifyAccessToken, verifyRefreshToken } from "@/lib/auth/jwt";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 
-export function proxy(request: NextRequest) {
+async function hasValidSession(request: NextRequest) {
+  const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
+  if (accessToken) {
+    try {
+      await verifyAccessToken(accessToken);
+      return true;
+    } catch {
+      // fall through to check the refresh token
+    }
+  }
+
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
+  if (refreshToken) {
+    try {
+      await verifyRefreshToken(refreshToken);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-  const hasSession =
-    request.cookies.has(ACCESS_COOKIE) || request.cookies.has(REFRESH_COOKIE);
+  const hasSession = await hasValidSession(request);
 
   if (!isPublic && pathname !== "/" && !hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    response.cookies.delete(ACCESS_COOKIE);
+    response.cookies.delete(REFRESH_COOKIE);
+    return response;
   }
 
   if (isPublic && hasSession) {
@@ -21,6 +48,13 @@ export function proxy(request: NextRequest) {
     url.pathname = "/dashboard";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  if (isPublic && !hasSession) {
+    const response = NextResponse.next();
+    response.cookies.delete(ACCESS_COOKIE);
+    response.cookies.delete(REFRESH_COOKIE);
+    return response;
   }
 
   return NextResponse.next();
