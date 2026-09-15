@@ -1,0 +1,564 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  OWNER
+  ADMIN
+  MAINTAINER
+  DEVELOPER
+  VIEWER
+}
+
+enum UserStatus {
+  ONLINE
+  AWAY
+  BUSY
+  OFFLINE
+}
+
+enum IssueState {
+  OPEN
+  CLOSED
+}
+
+enum PullRequestState {
+  OPEN
+  DRAFT
+  MERGED
+  CLOSED
+}
+
+enum ReviewState {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+  COMMENTED
+  DISMISSED
+}
+
+enum TestStatus {
+  QUEUED
+  RUNNING
+  PASSED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationType {
+  MESSAGE
+  MENTION
+  ISSUE_ASSIGNED
+  PR_REVIEW_REQUESTED
+  PR_APPROVED
+  PR_MERGED
+  TEST_FAILED
+  TEST_PASSED
+  BUILD_FAILED
+  REPO_INVITATION
+  VIDEO_CALL_INVITATION
+}
+
+enum ActivityType {
+  ISSUE_OPENED
+  ISSUE_CLOSED
+  PR_OPENED
+  PR_MERGED
+  PR_CLOSED
+  COMMIT_PUSHED
+  BUILD_PASSED
+  BUILD_FAILED
+  CONTRIBUTOR_JOINED
+  REVIEW_COMPLETED
+}
+
+enum ChannelKind {
+  PUBLIC
+  PRIVATE
+  DIRECT
+}
+
+// ---------------------------------------------------------------------------
+// Auth / Users
+// ---------------------------------------------------------------------------
+
+model User {
+  id             String     @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String     @unique
+  passwordHash   String
+  avatarUrl      String?
+  githubUsername String?
+  role           Role       @default(DEVELOPER)
+  timezone       String     @default("UTC")
+  status         UserStatus @default(OFFLINE)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  sessions             Session[]
+  refreshTokens        RefreshToken[]
+  workspaceMemberships WorkspaceMember[]
+  repositoryMembers    RepositoryMember[]
+  channelMembers       ChannelMember[]
+  messages             Message[]
+  messageReactions     MessageReaction[]
+  authoredIssues       Issue[]                    @relation("IssueAuthor")
+  assignedIssues       Issue[]                     @relation("IssueAssignees")
+  authoredPullRequests PullRequest[]              @relation("PullRequestAuthor")
+  reviewRequests       PullRequest[]               @relation("PullRequestReviewers")
+  pullRequestReviews   PullRequestReview[]
+  notifications        Notification[]
+  githubConnection      GitHubConnection?
+  activities            Activity[]
+  videoParticipants      VideoParticipant[]
+  codingSessionMembers   CodingSessionParticipant[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  userId      String
+  sessionId   String?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  replacedBy  String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Workspaces / Repositories
+// ---------------------------------------------------------------------------
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      WorkspaceMember[]
+  repositories Repository[]
+  channels     Channel[]
+  notifications Notification[]
+  activities    Activity[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        Role     @default(DEVELOPER)
+  joinedAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model Repository {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  name            String
+  owner           String
+  fullName        String   @unique
+  description     String?
+  isPrivate       Boolean  @default(false)
+  language        String?
+  defaultBranch   String   @default("main")
+  stars           Int      @default(0)
+  forks           Int      @default(0)
+  openIssuesCount Int      @default(0)
+  githubId        BigInt?  @unique
+  githubUrl       String?
+  cloneUrlHttps   String?
+  cloneUrlSsh     String?
+  lastSyncedAt    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members     RepositoryMember[]
+  branches    Branch[]
+  commits     Commit[]
+  issues      Issue[]
+  pullRequests PullRequest[]
+  testRuns     TestRun[]
+  activities   Activity[]
+  codingSessions CodingSession[]
+
+  @@index([workspaceId])
+  @@index([owner, name])
+}
+
+model RepositoryMember {
+  id           String   @id @default(cuid())
+  repositoryId String
+  userId       String
+  role         Role     @default(DEVELOPER)
+  joinedAt     DateTime @default(now())
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, userId])
+  @@index([userId])
+}
+
+model Branch {
+  id           String   @id @default(cuid())
+  repositoryId String
+  name         String
+  isDefault    Boolean  @default(false)
+  headSha      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, name])
+}
+
+model Commit {
+  id           String   @id @default(cuid())
+  repositoryId String
+  sha          String
+  message      String
+  authorName   String
+  authorEmail  String
+  authorAvatar String?
+  branch       String?
+  additions    Int      @default(0)
+  deletions    Int      @default(0)
+  committedAt  DateTime
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, sha])
+  @@index([repositoryId, committedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Messaging
+// ---------------------------------------------------------------------------
+
+model Channel {
+  id          String      @id @default(cuid())
+  workspaceId String
+  name        String
+  topic       String?
+  kind        ChannelKind @default(PUBLIC)
+  createdAt   DateTime    @default(now())
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   ChannelMember[]
+  messages  Message[]
+
+  @@unique([workspaceId, name])
+}
+
+model ChannelMember {
+  id         String   @id @default(cuid())
+  channelId  String
+  userId     String
+  joinedAt   DateTime @default(now())
+  lastReadAt DateTime?
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  channelId String
+  authorId  String
+  content   String
+  threadId  String?
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  channel   Channel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  thread    MessageThread?    @relation(fields: [threadId], references: [id])
+  reactions MessageReaction[]
+
+  @@index([channelId, createdAt])
+  @@index([threadId])
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+}
+
+model MessageThread {
+  id        String   @id @default(cuid())
+  channelId String
+  createdAt DateTime @default(now())
+
+  messages Message[]
+}
+
+// ---------------------------------------------------------------------------
+// Issues / Pull Requests
+// ---------------------------------------------------------------------------
+
+model Issue {
+  id           String     @id @default(cuid())
+  repositoryId String
+  number       Int
+  title        String
+  description  String?
+  state        IssueState @default(OPEN)
+  labels       String[]   @default([])
+  milestone    String?
+  authorId     String?
+  githubId     BigInt?    @unique
+  commentsCount Int       @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  closedAt     DateTime?
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  author     User?      @relation("IssueAuthor", fields: [authorId], references: [id])
+  assignees  User[]     @relation("IssueAssignees")
+
+  @@unique([repositoryId, number])
+  @@index([repositoryId, state])
+}
+
+model PullRequest {
+  id            String            @id @default(cuid())
+  repositoryId  String
+  number        Int
+  title         String
+  description   String?
+  state         PullRequestState  @default(OPEN)
+  sourceBranch  String
+  targetBranch  String
+  authorId      String?
+  githubId      BigInt?           @unique
+  additions     Int               @default(0)
+  deletions     Int               @default(0)
+  changedFiles  Int               @default(0)
+  commentsCount Int               @default(0)
+  checksStatus  TestStatus        @default(QUEUED)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  mergedAt      DateTime?
+  closedAt      DateTime?
+
+  repository Repository           @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  author     User?                @relation("PullRequestAuthor", fields: [authorId], references: [id])
+  reviewers  User[]               @relation("PullRequestReviewers")
+  reviews    PullRequestReview[]
+
+  @@unique([repositoryId, number])
+  @@index([repositoryId, state])
+}
+
+model PullRequestReview {
+  id            String      @id @default(cuid())
+  pullRequestId String
+  reviewerId    String
+  state         ReviewState @default(PENDING)
+  body          String?
+  createdAt     DateTime    @default(now())
+
+  pullRequest PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([pullRequestId])
+}
+
+// ---------------------------------------------------------------------------
+// CI / Tests
+// ---------------------------------------------------------------------------
+
+model TestRun {
+  id           String     @id @default(cuid())
+  repositoryId String
+  workflow     String
+  branch       String
+  commitSha    String
+  environment  String?
+  status       TestStatus @default(QUEUED)
+  durationMs   Int?
+  startedAt    DateTime   @default(now())
+  finishedAt   DateTime?
+  externalUrl  String?
+
+  repository Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  results    TestResult[]
+
+  @@index([repositoryId, startedAt])
+}
+
+model TestResult {
+  id          String     @id @default(cuid())
+  testRunId   String
+  suite       String
+  name        String
+  status      TestStatus @default(QUEUED)
+  durationMs  Int?
+  errorMessage String?
+  stackTrace   String?
+
+  testRun TestRun @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+
+  @@index([testRunId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications / Activity
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  workspaceId String?
+  type        NotificationType
+  title       String
+  body        String?
+  link        String?
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id])
+
+  @@index([userId, readAt])
+}
+
+model Activity {
+  id           String       @id @default(cuid())
+  workspaceId  String
+  repositoryId String?
+  actorId      String?
+  type         ActivityType
+  summary      String
+  metadata     Json?
+  createdAt    DateTime     @default(now())
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository? @relation(fields: [repositoryId], references: [id])
+  actor      User?       @relation(fields: [actorId], references: [id])
+
+  @@index([workspaceId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Video
+// ---------------------------------------------------------------------------
+
+model VideoRoom {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  createdAt   DateTime @default(now())
+  endedAt     DateTime?
+
+  participants VideoParticipant[]
+}
+
+model VideoParticipant {
+  id        String    @id @default(cuid())
+  roomId    String
+  userId    String
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  room VideoRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+}
+
+// ---------------------------------------------------------------------------
+// Collaborative Coding
+// ---------------------------------------------------------------------------
+
+model CodingSession {
+  id           String   @id @default(cuid())
+  repositoryId String
+  filePath     String
+  createdAt    DateTime @default(now())
+  endedAt      DateTime?
+
+  repository   Repository                 @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  participants CodingSessionParticipant[]
+}
+
+model CodingSessionParticipant {
+  id        String    @id @default(cuid())
+  sessionId String
+  userId    String
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  session CodingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+// ---------------------------------------------------------------------------
+// GitHub Integration
+// ---------------------------------------------------------------------------
+
+model GitHubConnection {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  githubUserId        BigInt
+  githubUsername      String
+  accessTokenEncrypted String
+  refreshTokenEncrypted String?
+  scope               String?
+  tokenExpiresAt       DateTime?
+  connectedAt          DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
