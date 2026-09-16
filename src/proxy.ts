@@ -1,31 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/cookies";
-import { verifyAccessToken, verifyRefreshToken } from "@/lib/auth/jwt";
+import { verifyAccessToken } from "@/lib/auth/jwt";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 
 async function hasValidSession(request: NextRequest) {
   const accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
-  if (accessToken) {
-    try {
-      await verifyAccessToken(accessToken);
-      return true;
-    } catch {
-      // fall through to check the refresh token
-    }
-  }
+  if (!accessToken) return false;
 
-  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
-  if (refreshToken) {
-    try {
-      await verifyRefreshToken(refreshToken);
-      return true;
-    } catch {
-      return false;
-    }
+  try {
+    await verifyAccessToken(accessToken);
+    return true;
+  } catch {
+    return false;
   }
-
-  return false;
 }
 
 export async function proxy(request: NextRequest) {

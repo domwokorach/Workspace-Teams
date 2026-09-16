@@ -82,6 +82,7 @@ export function TopNav({ unreadNotifications, githubConnected, onOpenCommandPale
           size="sm"
           className="hidden gap-1.5 text-xs md:flex"
           render={<Link href="/settings" />}
+          nativeButton={false}
         >
           <GitBranch className="size-3.5" />
           {githubConnected ? "Connected" : "Connect GitHub"}
@@ -91,6 +92,7 @@ export function TopNav({ unreadNotifications, githubConnected, onOpenCommandPale
           size="icon"
           aria-label="Start video call"
           render={<Link href="/calls" />}
+          nativeButton={false}
         >
           <Video className="size-4.5" />
         </Button>
@@ -100,6 +102,7 @@ export function TopNav({ unreadNotifications, githubConnected, onOpenCommandPale
           className="relative"
           aria-label="Notifications"
           render={<Link href="/notifications" />}
+          nativeButton={false}
         >
           <Bell className="size-4.5" />
           {unreadNotifications > 0 && (

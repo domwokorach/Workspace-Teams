@@ -9,6 +9,29 @@ import {
 import { useDefaultLayout, type GroupImperativeHandle } from "react-resizable-panels";
 import { cn } from "@/lib/utils";
 
+/**
+ * localStorage can throw (private browsing, disabled site data, some
+ * embedded/sandboxed contexts) — accessing it directly as a prop value would
+ * crash the whole workspace on render. Fall back to an in-memory no-op store.
+ */
+function getSafeStorage(): Pick<Storage, "getItem" | "setItem"> {
+  try {
+    if (typeof window === "undefined") throw new Error("no window");
+    const testKey = "__resizable_workspace_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    return window.localStorage;
+  } catch {
+    const memory = new Map<string, string>();
+    return {
+      getItem: (key) => memory.get(key) ?? null,
+      setItem: (key, value) => {
+        memory.set(key, value);
+      },
+    };
+  }
+}
+
 /** Bare numbers are treated as a percentage of the group; strings pass through as-is (e.g. "64px"). */
 type PaneSize = number | string;
 
@@ -59,11 +82,13 @@ export const ResizableSplit = React.forwardRef<ResizableSplitHandle, ResizableSp
   ) {
     const visible = panes.filter((p) => !p.hidden);
     const panelIds = visible.map((p) => p.id);
+    const storageRef = React.useRef<Pick<Storage, "getItem" | "setItem">>(undefined);
+    if (!storageRef.current) storageRef.current = getSafeStorage();
 
     const { defaultLayout, onLayoutChanged } = useDefaultLayout({
       id: storageId,
       panelIds,
-      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      storage: storageRef.current,
     });
 
     const groupRef = React.useRef<GroupImperativeHandle>(null);

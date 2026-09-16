@@ -1,13 +1,8 @@
-import Link from "next/link";
-import { GitPullRequest, GitMerge, GitPullRequestClosed } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Suspense } from "react";
 import { requireCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { getDefaultWorkspace } from "@/lib/workspace";
-import { formatDistanceToNow } from "date-fns";
-
-const STATE_ICON = { OPEN: GitPullRequest, DRAFT: GitPullRequest, MERGED: GitMerge, CLOSED: GitPullRequestClosed };
-const STATE_COLOR = { OPEN: "text-emerald-500", DRAFT: "text-muted-foreground", MERGED: "text-purple-500", CLOSED: "text-red-500" };
+import { AllPullRequestsWorkspace, type AllPullRequestsRow } from "@/components/pull-requests/all-pull-requests-workspace";
 
 export default async function AllPullRequestsPage() {
   const user = await requireCurrentUser();
@@ -22,47 +17,27 @@ export default async function AllPullRequestsPage() {
       })
     : [];
 
+  const rows: AllPullRequestsRow[] = pullRequests.map((pr) => ({
+    id: pr.id,
+    number: pr.number,
+    title: pr.title,
+    state: pr.state,
+    sourceBranch: pr.sourceBranch,
+    targetBranch: pr.targetBranch,
+    updatedAt: pr.updatedAt.toISOString(),
+    repositoryId: pr.repositoryId,
+    repository: { fullName: pr.repository.fullName },
+  }));
+
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="flex h-full flex-col gap-4 p-4 md:p-6">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Pull Requests</h1>
         <p className="text-sm text-muted-foreground">Across all repositories in your workspace.</p>
       </div>
-
-      {pullRequests.length === 0 ? (
-        <div className="rounded-lg border py-16 text-center text-sm text-muted-foreground">
-          No open pull requests. Your team is all caught up.
-        </div>
-      ) : (
-        <div className="divide-y rounded-lg border">
-          {pullRequests.map((pr) => {
-            const Icon = STATE_ICON[pr.state];
-            return (
-              <Link
-                key={pr.id}
-                href={`/repositories/${pr.repositoryId}/pull-requests/${pr.number}`}
-                className="flex items-start gap-3 p-3 hover:bg-accent/50"
-              >
-                <Icon className={`mt-0.5 size-4 shrink-0 ${STATE_COLOR[pr.state]}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {pr.title} <span className="font-normal text-muted-foreground">#{pr.number}</span>
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <Badge variant="outline" className="font-mono text-[10px]">{pr.repository.fullName}</Badge>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {pr.sourceBranch} → {pr.targetBranch}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      updated {formatDistanceToNow(pr.updatedAt, { addSuffix: true })}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+      <Suspense>
+        <AllPullRequestsWorkspace pullRequests={rows} />
+      </Suspense>
     </div>
   );
 }

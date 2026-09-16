@@ -116,7 +116,7 @@ export function PullRequestFiles({ files, reviews }: { files: FileChange[]; revi
   );
 
   return (
-    <div className="flex h-[75vh] min-h-[420px] flex-col overflow-hidden rounded-lg border">
+    <div className="flex h-[max(75vh,calc(100dvh-20rem))] min-h-[480px] flex-col overflow-hidden rounded-lg border">
       <div className="flex shrink-0 items-center justify-end gap-1 border-b bg-muted/10 px-2 py-1">
         <ResetLayoutButton onReset={() => workspaceRef.current?.reset()} />
         <ToggleContextPanelButton open={contextOpen} onToggle={() => setContextOpen((v) => !v)} />
