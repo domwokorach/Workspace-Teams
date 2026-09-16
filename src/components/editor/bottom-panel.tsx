@@ -115,7 +115,7 @@ export function BottomPanel({ problems = [], output = [], className }: BottomPan
   const errorCount = problems.filter((p) => p.severity === "error").length;
 
   return (
-    <Tabs defaultValue="terminal" className="flex h-full min-h-0 w-full flex-col gap-0">
+    <Tabs defaultValue="terminal" className={cn("flex h-full min-h-0 w-full flex-col gap-0", className)}>
       <TabsList variant="line" className="h-8 shrink-0 justify-start rounded-none border-b bg-muted/10 px-2">
         <TabsTrigger value="terminal">Terminal</TabsTrigger>
         <TabsTrigger value="problems" className="gap-1.5">

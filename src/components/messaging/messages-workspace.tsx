@@ -246,9 +246,10 @@ export function MessagesWorkspace({ channels }: { channels: ChannelLite[] }) {
     queueMicrotask(load);
   }, [load]);
 
-  React.useEffect(() => {
+  function selectChannel(channelId: string) {
+    setActiveChannelId(channelId);
     setThreadMessage(null);
-  }, [activeChannelId]);
+  }
 
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -310,7 +311,7 @@ export function MessagesWorkspace({ channels }: { channels: ChannelLite[] }) {
   return (
     <ResizableWorkspace
       storageId="workspace.messages"
-      sidebar={<ChannelSidebar channels={channels} activeChannelId={activeChannelId} onSelect={setActiveChannelId} />}
+      sidebar={<ChannelSidebar channels={channels} activeChannelId={activeChannelId} onSelect={selectChannel} />}
       sidebarDefaultSize={18}
       sidebarMinSize={12}
       sidebarMaxSize={28}

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface IssueRow {
   id: string;
@@ -32,7 +33,17 @@ const TABS = [
   { value: "closed", label: "Closed" },
 ];
 
-export function IssueList({ repositoryId }: { repositoryId: string; currentUserId: string }) {
+export function IssueList({
+  repositoryId,
+  onSelect,
+  selectedNumber,
+}: {
+  repositoryId: string;
+  currentUserId: string;
+  /** When provided, clicking an issue calls this instead of navigating via Link (used by the master/detail workspace). */
+  onSelect?: (number: number) => void;
+  selectedNumber?: number | null;
+}) {
   const [tab, setTab] = React.useState("open");
   const [issues, setIssues] = React.useState<IssueRow[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -104,52 +115,76 @@ export function IssueList({ repositoryId }: { repositoryId: string; currentUserI
         </div>
       ) : (
         <div className="divide-y rounded-lg border">
-          {issues.map((issue) => (
-            <Link
-              key={issue.id}
-              href={`/repositories/${repositoryId}/issues/${issue.number}`}
-              className="flex items-start gap-3 p-3 hover:bg-accent/50"
-            >
-              {issue.state === "OPEN" ? (
-                <CircleDot className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-              ) : (
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-purple-500" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">
-                  {issue.title} <span className="font-normal text-muted-foreground">#{issue.number}</span>
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                  {issue.labels.map((l) => (
-                    <Badge key={l} variant="secondary" className="text-[10px]">
-                      {l}
-                    </Badge>
-                  ))}
-                  <span className="text-xs text-muted-foreground">
-                    opened {formatDistanceToNow(new Date(issue.updatedAt), { addSuffix: true })}
-                    {issue.author && ` by ${issue.author.firstName} ${issue.author.lastName}`}
-                  </span>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-3">
-                {issue.assignees.length > 0 && (
-                  <div className="flex -space-x-1.5">
-                    {issue.assignees.slice(0, 3).map((a) => (
-                      <Avatar key={a.id} className="size-5 border-2 border-background">
-                        <AvatarImage src={a.avatarUrl ?? undefined} />
-                        <AvatarFallback className="text-[9px]">{a.firstName[0]}{a.lastName[0]}</AvatarFallback>
-                      </Avatar>
+          {issues.map((issue) => {
+            const active = selectedNumber === issue.number;
+            const inner = (
+              <>
+                {issue.state === "OPEN" ? (
+                  <CircleDot className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                ) : (
+                  <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-purple-500" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {issue.title} <span className="font-normal text-muted-foreground">#{issue.number}</span>
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {issue.labels.map((l) => (
+                      <Badge key={l} variant="secondary" className="text-[10px]">
+                        {l}
+                      </Badge>
                     ))}
+                    <span className="text-xs text-muted-foreground">
+                      opened {formatDistanceToNow(new Date(issue.updatedAt), { addSuffix: true })}
+                      {issue.author && ` by ${issue.author.firstName} ${issue.author.lastName}`}
+                    </span>
                   </div>
-                )}
-                {issue.commentsCount > 0 && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MessageSquare className="size-3.5" /> {issue.commentsCount}
-                  </span>
-                )}
-              </div>
-            </Link>
-          ))}
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  {issue.assignees.length > 0 && (
+                    <div className="flex -space-x-1.5">
+                      {issue.assignees.slice(0, 3).map((a) => (
+                        <Avatar key={a.id} className="size-5 border-2 border-background">
+                          <AvatarImage src={a.avatarUrl ?? undefined} />
+                          <AvatarFallback className="text-[9px]">{a.firstName[0]}{a.lastName[0]}</AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                  )}
+                  {issue.commentsCount > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MessageSquare className="size-3.5" /> {issue.commentsCount}
+                    </span>
+                  )}
+                </div>
+              </>
+            );
+
+            if (onSelect) {
+              return (
+                <button
+                  key={issue.id}
+                  onClick={() => onSelect(issue.number)}
+                  className={cn(
+                    "flex w-full items-start gap-3 p-3 text-left hover:bg-accent/50",
+                    active && "bg-accent",
+                  )}
+                >
+                  {inner}
+                </button>
+              );
+            }
+
+            return (
+              <Link
+                key={issue.id}
+                href={`/repositories/${repositoryId}/issues/${issue.number}`}
+                className="flex items-start gap-3 p-3 hover:bg-accent/50"
+              >
+                {inner}
+              </Link>
+            );
+          })}
         </div>
       )}
 

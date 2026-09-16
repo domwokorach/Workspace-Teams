@@ -7,9 +7,5 @@ export default async function RepositoryContributorsPage({ params }: { params: P
   const user = await requireCurrentUser();
   const repository = await getAccessibleRepository(user.id, id);
 
-  return (
-    <div className="p-4 md:p-6">
-      <RepositoryContributors repositoryId={repository.id} />
-    </div>
-  );
+  return <RepositoryContributors repositoryId={repository.id} />;
 }

@@ -7,9 +7,5 @@ export default async function RepositoryTestsPage({ params }: { params: Promise<
   const user = await requireCurrentUser();
   const repository = await getAccessibleRepository(user.id, id);
 
-  return (
-    <div className="p-4 md:p-6">
-      <WorkflowRunList repositoryId={repository.id} />
-    </div>
-  );
+  return <WorkflowRunList repositoryId={repository.id} />;
 }

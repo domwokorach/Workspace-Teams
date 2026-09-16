@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
-import { DiffViewer } from "./diff-viewer";
+import { PullRequestFiles } from "./pull-request-files";
 import type { GitHubPullRequestSummary } from "@/types/github";
 
 interface FileChange {
@@ -245,10 +245,8 @@ export function PullRequestDetail({ repositoryId, number }: { repositoryId: stri
           </p>
         </TabsContent>
 
-        <TabsContent value="files" className="space-y-3">
-          {files.map((f) => (
-            <DiffViewer key={f.filename} filename={f.filename} patch={f.patch} additions={f.additions} deletions={f.deletions} />
-          ))}
+        <TabsContent value="files">
+          <PullRequestFiles files={files} reviews={reviews} />
         </TabsContent>
       </Tabs>
     </div>
