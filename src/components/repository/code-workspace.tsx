@@ -2,17 +2,14 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { X, Circle, Loader2, PanelRightOpen, PanelRightClose, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FileExplorer } from "@/components/editor/file-explorer";
-import { languageForFile } from "@/lib/file-icons";
-import { cn } from "@/lib/utils";
+import { Users } from "lucide-react";
+import { EditorWorkspace } from "@/components/editor/editor-workspace";
+import { ResizableWorkspace, type ResizableSplitHandle } from "@/components/layout/resizable-workspace";
+import { ToggleContextPanelButton, ResetLayoutButton } from "@/components/layout/workspace-toolbar-controls";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 import type { DirtyFile } from "./git-panel";
 
-const MonacoCodeEditor = dynamic(
-  () => import("@/components/editor/monaco-code-editor").then((m) => m.MonacoCodeEditor),
-  { ssr: false },
-);
 const GitPanel = dynamic(() => import("./git-panel").then((m) => m.GitPanel), { ssr: false });
 
 interface OpenFile {
@@ -35,6 +32,9 @@ export function CodeWorkspace({
   const [branch, setBranch] = React.useState(defaultBranch);
   const [staged, setStaged] = React.useState<Set<string>>(new Set());
   const [gitPanelOpen, setGitPanelOpen] = React.useState(true);
+  const [mobileGitOpen, setMobileGitOpen] = React.useState(false);
+  const breakpoint = useBreakpoint();
+  const workspaceRef = React.useRef<ResizableSplitHandle>(null);
 
   const activeFile = openFiles.find((f) => f.path === activePath) ?? null;
 
@@ -95,86 +95,76 @@ export function CodeWorkspace({
     });
   }
 
-  return (
-    <div className="grid h-full grid-cols-[220px_1fr] md:grid-cols-[240px_1fr_280px]">
-      <FileExplorer repositoryId={repositoryId} selectedPath={activePath} onSelect={openFile} />
+  const tabs = openFiles.map((f) => ({ path: f.path, dirty: !f.loading && f.content !== f.originalContent }));
+  const contextOpen = breakpoint === "desktop" ? gitPanelOpen : false;
 
-      <div className="flex min-w-0 flex-col">
-        <div className="flex items-center gap-2 border-b bg-muted/20 px-2 py-1.5 text-xs">
-          <Users className="size-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">Live coding · you</span>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="ml-auto md:hidden"
-            onClick={() => setGitPanelOpen((v) => !v)}
-            aria-label="Toggle git panel"
-          >
-            {gitPanelOpen ? <PanelRightClose className="size-3.5" /> : <PanelRightOpen className="size-3.5" />}
-          </Button>
-        </div>
-
-        {openFiles.length > 0 && (
-          <div className="flex overflow-x-auto border-b bg-muted/10">
-            {openFiles.map((f) => {
-              const dirty = !f.loading && f.content !== f.originalContent;
-              return (
-                <button
-                  key={f.path}
-                  onClick={() => setActivePath(f.path)}
-                  className={cn(
-                    "group flex shrink-0 items-center gap-1.5 border-r px-3 py-1.5 text-xs",
-                    activePath === f.path ? "bg-background" : "text-muted-foreground hover:bg-accent/50",
-                  )}
-                >
-                  <span className="max-w-40 truncate font-mono">{f.path.split("/").pop()}</span>
-                  {dirty ? (
-                    <Circle className="size-2 shrink-0 fill-current text-primary" />
-                  ) : (
-                    <X
-                      className="size-3 shrink-0 opacity-0 group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        closeFile(f.path);
-                      }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="min-h-0 flex-1">
-          {!activeFile ? (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Select a file to start editing
-            </div>
-          ) : activeFile.loading ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="size-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <MonacoCodeEditor
-              path={activeFile.path}
-              value={activeFile.content}
-              language={languageForFile(activeFile.path)}
-              onChange={(v) => updateContent(activeFile.path, v)}
-            />
-          )}
+  const main = (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-2 border-b bg-muted/20 px-2 py-1.5 text-xs">
+        <Users className="size-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">Live coding · you</span>
+        <div className="ml-auto flex items-center gap-1">
+          <ResetLayoutButton onReset={() => workspaceRef.current?.reset()} />
+          <ToggleContextPanelButton
+            open={breakpoint === "desktop" ? gitPanelOpen : mobileGitOpen}
+            onToggle={() =>
+              breakpoint === "desktop" ? setGitPanelOpen((v) => !v) : setMobileGitOpen((v) => !v)
+            }
+          />
         </div>
       </div>
-
-      <div className={cn("hidden border-l md:block", !gitPanelOpen && "md:hidden")}>
-        <GitPanel
+      <div className="min-h-0 flex-1">
+        <EditorWorkspace
           repositoryId={repositoryId}
-          branch={branch}
-          onBranchChange={setBranch}
-          dirtyFiles={dirtyFiles}
-          onToggleStaged={toggleStaged}
-          onCommitted={handleCommitted}
+          activeFile={activeFile}
+          tabs={tabs}
+          activePath={activePath}
+          onSelectFile={setActivePath}
+          onCloseTab={closeFile}
+          onOpenFile={openFile}
+          onChangeContent={updateContent}
         />
       </div>
     </div>
+  );
+
+  const gitPanel = (
+    <GitPanel
+      repositoryId={repositoryId}
+      branch={branch}
+      onBranchChange={setBranch}
+      dirtyFiles={dirtyFiles}
+      onToggleStaged={toggleStaged}
+      onCommitted={handleCommitted}
+    />
+  );
+
+  if (breakpoint !== "desktop") {
+    return (
+      <div className="h-full min-h-0">
+        {main}
+        <Sheet open={mobileGitOpen} onOpenChange={setMobileGitOpen}>
+          <SheetContent side="right" className="w-80 p-0">
+            <SheetTitle className="sr-only">Git</SheetTitle>
+            {gitPanel}
+          </SheetContent>
+        </Sheet>
+      </div>
+    );
+  }
+
+  return (
+    <ResizableWorkspace
+      ref={workspaceRef}
+      storageId="workspace.code"
+      main={main}
+      mainDefaultSize={80}
+      mainMinSize={40}
+      context={gitPanel}
+      contextOpen={contextOpen}
+      contextDefaultSize={20}
+      contextMinSize={15}
+      contextMaxSize={40}
+    />
   );
 }

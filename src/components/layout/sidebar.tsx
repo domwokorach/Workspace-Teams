@@ -28,12 +28,7 @@ export function Sidebar({ user, workspaceName, recentRepositories, collapsed, on
   const pathname = usePathname();
 
   return (
-    <aside
-      className={cn(
-        "hidden md:flex h-screen shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground transition-[width] duration-200",
-        collapsed ? "w-16" : "w-64",
-      )}
-    >
+    <aside className="flex h-full w-full min-w-0 flex-col border-r bg-sidebar text-sidebar-foreground">
       <div className="flex h-14 items-center gap-2 border-b px-3">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
           <Code2 className="size-4" />
