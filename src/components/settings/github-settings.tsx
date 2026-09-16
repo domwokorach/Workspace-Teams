@@ -53,7 +53,7 @@ export function GitHubSettings({ github }: { github: { username: string; connect
         )}
 
         {github ? (
-          <div className="flex items-center justify-between rounded-lg border p-3">
+          <div className="flex items-center justify-between rounded-md border p-3">
             <div className="flex items-center gap-2">
               <GitBranch className="size-4 text-muted-foreground" />
               <div>

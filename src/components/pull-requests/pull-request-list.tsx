@@ -73,11 +73,11 @@ export function PullRequestList({ repositoryId }: { repositoryId: string }) {
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : prs.length === 0 ? (
-        <div className="rounded-lg border py-16 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border py-16 text-center text-sm text-muted-foreground">
           No pull requests found for this view.
         </div>
       ) : (
-        <div className="divide-y rounded-lg border">
+        <div className="divide-y rounded-md border">
           {prs.map((pr) => {
             const Icon = STATE_ICON[pr.state];
             return (

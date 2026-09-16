@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@monaco-editor/react": "^4.7.0",
     "@octokit/auth-oauth-app": "^9.0.5",
     "@octokit/graphql": "^9.0.5",
@@ -40,6 +41,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-resizable-panels": "^4.12.4",
+    "server-only": "^0.0.1",
     "shadcn": "^4.21.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",

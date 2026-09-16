@@ -236,13 +236,13 @@ export function LiveCodingWorkspace() {
   if (breakpoint !== "desktop") {
     return (
       <div className="flex h-[calc(100vh-10rem)] min-h-[480px] flex-col gap-3 overflow-y-auto">
-        <div className="h-80 shrink-0 overflow-hidden rounded-lg border">
+        <div className="h-80 shrink-0 overflow-hidden rounded-md border">
           <MonacoCodeEditor path={SCRATCH_FILE} value={code} language="typescript" onChange={setCode} />
         </div>
-        <div className="h-64 shrink-0 overflow-hidden rounded-lg border">
+        <div className="h-64 shrink-0 overflow-hidden rounded-md border">
           <ParticipantsPanel />
         </div>
-        <div className="h-80 shrink-0 overflow-hidden rounded-lg border">
+        <div className="h-80 shrink-0 overflow-hidden rounded-md border">
           <ChatPanel />
         </div>
       </div>
@@ -250,7 +250,7 @@ export function LiveCodingWorkspace() {
   }
 
   return (
-    <div className="h-[calc(100vh-10rem)] min-h-[480px] overflow-hidden rounded-lg border">
+    <div className="h-[calc(100vh-10rem)] min-h-[480px] overflow-hidden rounded-md border">
       <ResizableSplit ref={outerRef} storageId="workspace.calls" orientation="horizontal" panes={outerPanes} />
     </div>
   );

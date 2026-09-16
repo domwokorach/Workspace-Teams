@@ -82,7 +82,7 @@ export function NotificationList() {
           const content = (
             <div
               className={cn(
-                "flex items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-accent/50",
+                "flex items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-accent/50",
                 !n.readAt && "bg-primary/5",
               )}
             >

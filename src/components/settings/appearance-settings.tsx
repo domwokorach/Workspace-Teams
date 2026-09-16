@@ -26,7 +26,7 @@ export function AppearanceSettings() {
             key={opt.value}
             onClick={() => setTheme(opt.value)}
             className={cn(
-              "flex flex-1 flex-col items-center gap-2 rounded-lg border p-4 text-sm transition-colors",
+              "flex flex-1 flex-col items-center gap-2 rounded-md border p-4 text-sm transition-colors",
               theme === opt.value ? "border-primary bg-primary/5" : "hover:bg-accent/50",
             )}
           >

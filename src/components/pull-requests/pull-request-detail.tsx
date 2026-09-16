@@ -165,7 +165,7 @@ export function PullRequestDetail({ repositoryId, number }: { repositoryId: stri
       )}
 
       {!pr.merged && pr.state === "open" && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-md border p-3">
           <Textarea
             placeholder="Leave a review comment (optional)…"
             value={reviewBody}

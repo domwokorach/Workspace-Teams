@@ -58,7 +58,7 @@ export function IssuesWorkspace({ repositoryId, currentUserId }: { repositoryId:
   );
 
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] min-h-[480px] flex-col overflow-hidden rounded-lg border">
+    <div className="flex h-[calc(100vh-8.5rem)] min-h-[480px] flex-col overflow-hidden rounded-md border">
       <div className="flex shrink-0 items-center justify-end gap-1 border-b bg-muted/10 px-2 py-1">
         <ResetLayoutButton onReset={() => workspaceRef.current?.reset()} />
       </div>

@@ -56,7 +56,7 @@ export function SessionsSettings() {
         ) : (
           <ul className="space-y-2">
             {sessions.map((s) => (
-              <li key={s.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+              <li key={s.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Monitor className="size-4 text-muted-foreground" />
                   <span>Signed in {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}</span>

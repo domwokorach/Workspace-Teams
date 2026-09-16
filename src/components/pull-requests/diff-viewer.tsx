@@ -40,7 +40,7 @@ export function DiffViewer({ filename, patch, additions, deletions }: {
   const lines = patch ? parsePatch(patch) : [];
 
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="overflow-hidden rounded-md border">
       <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2 text-xs">
         <span className="truncate font-mono font-medium">{filename}</span>
         <span className="shrink-0 font-mono">

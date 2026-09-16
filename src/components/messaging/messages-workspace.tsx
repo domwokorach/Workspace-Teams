@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Hash, Send, Loader2, Info, MessageSquare, X } from "lucide-react";
+import { Hash, Send, Loader2, Info, MessageSquare, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,7 +23,12 @@ interface MessageRow {
   id: string;
   content: string;
   createdAt: string;
-  author: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+  sender: { id: string; name: string; avatarUrl: string | null };
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }
 
 function ChannelSidebar({
@@ -74,17 +79,12 @@ function MessageThread({ message, onClose }: { message: MessageRow; onClose: () 
       <div className="flex-1 overflow-y-auto p-3">
         <div className="flex items-start gap-3">
           <Avatar className="size-8">
-            <AvatarImage src={message.author.avatarUrl ?? undefined} />
-            <AvatarFallback className="text-xs">
-              {message.author.firstName[0]}
-              {message.author.lastName[0]}
-            </AvatarFallback>
+            <AvatarImage src={message.sender.avatarUrl ?? undefined} />
+            <AvatarFallback className="text-xs">{initials(message.sender.name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-sm font-medium">
-                {message.author.firstName} {message.author.lastName}
-              </span>
+              <span className="text-sm font-medium">{message.sender.name}</span>
               <span className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
               </span>
@@ -112,6 +112,8 @@ function MessagePane({
   activeChannel,
   messages,
   loading,
+  error,
+  sendError,
   draft,
   setDraft,
   sending,
@@ -123,6 +125,8 @@ function MessagePane({
   activeChannel: ChannelLite | null;
   messages: MessageRow[];
   loading: boolean;
+  error: string | null;
+  sendError: string | null;
   draft: string;
   setDraft: (v: string) => void;
   sending: boolean;
@@ -148,7 +152,12 @@ function MessagePane({
           </AlertDescription>
         </Alert>
 
-        {loading ? (
+        {error ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="size-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
@@ -167,17 +176,12 @@ function MessagePane({
                 )}
               >
                 <Avatar className="size-8">
-                  <AvatarImage src={m.author.avatarUrl ?? undefined} />
-                  <AvatarFallback className="text-xs">
-                    {m.author.firstName[0]}
-                    {m.author.lastName[0]}
-                  </AvatarFallback>
+                  <AvatarImage src={m.sender.avatarUrl ?? undefined} />
+                  <AvatarFallback className="text-xs">{initials(m.sender.name)}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-medium">
-                      {m.author.firstName} {m.author.lastName}
-                    </span>
+                    <span className="text-sm font-medium">{m.sender.name}</span>
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(m.createdAt), { addSuffix: true })}
                     </span>
@@ -200,22 +204,30 @@ function MessagePane({
         )}
       </div>
 
-      <div className="flex items-end gap-2 border-t p-3">
-        <Textarea
-          placeholder={`Message #${activeChannel?.name ?? ""}`}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          className="min-h-11"
-        />
-        <Button size="icon" onClick={handleSend} disabled={!draft.trim() || sending} aria-label="Send message">
-          {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-        </Button>
+      <div className="border-t p-3">
+        {sendError && (
+          <Alert variant="destructive" className="mb-2">
+            <AlertTriangle className="size-4" />
+            <AlertDescription>{sendError}</AlertDescription>
+          </Alert>
+        )}
+        <div className="flex items-end gap-2">
+          <Textarea
+            placeholder={`Message #${activeChannel?.name ?? ""}`}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            className="min-h-11"
+          />
+          <Button size="icon" onClick={handleSend} disabled={!draft.trim() || sending} aria-label="Send message">
+            {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -225,8 +237,10 @@ export function MessagesWorkspace({ channels }: { channels: ChannelLite[] }) {
   const [activeChannelId, setActiveChannelId] = React.useState(channels[0]?.id ?? null);
   const [messages, setMessages] = React.useState<MessageRow[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState("");
   const [sending, setSending] = React.useState(false);
+  const [sendError, setSendError] = React.useState<string | null>(null);
   const [threadMessage, setThreadMessage] = React.useState<MessageRow | null>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const breakpoint = useBreakpoint();
@@ -236,10 +250,18 @@ export function MessagesWorkspace({ channels }: { channels: ChannelLite[] }) {
   const load = React.useCallback(async () => {
     if (!activeChannelId) return;
     setLoading(true);
-    const res = await fetch(`/api/channels/${activeChannelId}/messages`);
-    const data = await res.json();
-    setMessages(data.messages ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await fetch(`/api/channels/${activeChannelId}/messages`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to load messages.");
+      setMessages(data.messages ?? []);
+    } catch {
+      setMessages([]);
+      setError("Couldn't load messages. Try again.");
+    } finally {
+      setLoading(false);
+    }
   }, [activeChannelId]);
 
   React.useEffect(() => {
@@ -258,14 +280,19 @@ export function MessagesWorkspace({ channels }: { channels: ChannelLite[] }) {
   async function handleSend() {
     if (!draft.trim() || !activeChannelId) return;
     setSending(true);
+    setSendError(null);
     try {
-      await fetch(`/api/channels/${activeChannelId}/messages`, {
+      const res = await fetch(`/api/channels/${activeChannelId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: draft }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to send message.");
       setDraft("");
-      load();
+      await load();
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Failed to send message.");
     } finally {
       setSending(false);
     }
@@ -284,6 +311,8 @@ export function MessagesWorkspace({ channels }: { channels: ChannelLite[] }) {
       activeChannel={activeChannel}
       messages={messages}
       loading={loading}
+      error={error}
+      sendError={sendError}
       draft={draft}
       setDraft={setDraft}
       sending={sending}

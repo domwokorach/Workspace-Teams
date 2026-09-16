@@ -110,11 +110,11 @@ export function IssueList({
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : issues.length === 0 ? (
-        <div className="rounded-lg border py-16 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border py-16 text-center text-sm text-muted-foreground">
           No issues found for this view.
         </div>
       ) : (
-        <div className="divide-y rounded-lg border">
+        <div className="divide-y rounded-md border">
           {issues.map((issue) => {
             const active = selectedNumber === issue.number;
             const inner = (

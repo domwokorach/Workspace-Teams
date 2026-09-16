@@ -112,7 +112,7 @@ export function RepositoryContributors({ repositoryId }: { repositoryId: string 
                 {recentWeeks.map((w) => (
                   <div
                     key={w.weekStart}
-                    className="flex-1 rounded-sm bg-primary/70 transition-colors hover:bg-primary"
+                    className="flex-1 rounded-md bg-primary/70 transition-colors hover:bg-primary"
                     style={{ height: `${Math.max(4, (w.total / maxCommits) * 100)}%` }}
                     title={`${w.total} commits · week of ${new Date(w.weekStart).toLocaleDateString()}`}
                   />

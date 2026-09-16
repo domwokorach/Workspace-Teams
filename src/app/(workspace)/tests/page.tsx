@@ -21,7 +21,7 @@ export default async function TestsOverviewPage() {
       </div>
 
       {repos.length === 0 ? (
-        <div className="rounded-lg border py-16 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border py-16 text-center text-sm text-muted-foreground">
           No repositories connected yet.
         </div>
       ) : (

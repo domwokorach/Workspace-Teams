@@ -1,35 +1,48 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/lib/auth/session";
-import { getAccessibleChannel } from "@/lib/channel";
-import { prisma } from "@/lib/db/client";
+import { ZodError } from "zod";
+import { requireCurrentUser, AuthError } from "@/lib/auth/session";
+import { listMessages, createMessage, MessageNotFoundError } from "@/lib/messages/service";
+import { listMessagesSchema, createMessageSchema } from "@/lib/validation/messages";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+function errorResponse(error: unknown) {
+  if (error instanceof ZodError) {
+    return NextResponse.json({ error: error.issues[0]?.message ?? "Invalid request." }, { status: 400 });
+  }
+  if (error instanceof AuthError) {
+    return NextResponse.json({ error: error.message }, { status: error.code === "UNAUTHENTICATED" ? 401 : 403 });
+  }
+  if (error instanceof MessageNotFoundError) {
+    return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
+}
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireCurrentUser();
-  await getAccessibleChannel(user.id, id);
-
-  const messages = await prisma.message.findMany({
-    where: { channelId: id },
-    orderBy: { createdAt: "asc" },
-    take: 100,
-    include: { author: true, reactions: true },
-  });
-
-  return NextResponse.json({ messages });
+  try {
+    const user = await requireCurrentUser();
+    const url = new URL(request.url);
+    const input = listMessagesSchema.parse({
+      channelId: id,
+      limit: url.searchParams.get("limit") ? Number(url.searchParams.get("limit")) : undefined,
+      cursor: url.searchParams.get("cursor") ?? undefined,
+    });
+    const result = await listMessages(user.id, input);
+    return NextResponse.json({ messages: result.items, nextCursor: result.nextCursor });
+  } catch (error) {
+    return errorResponse(error);
+  }
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireCurrentUser();
-  await getAccessibleChannel(user.id, id);
-
-  const { content } = await request.json();
-  if (!content?.trim()) return NextResponse.json({ error: "content is required" }, { status: 400 });
-
-  const message = await prisma.message.create({
-    data: { channelId: id, authorId: user.id, content },
-    include: { author: true, reactions: true },
-  });
-
-  return NextResponse.json({ message });
+  try {
+    const user = await requireCurrentUser();
+    const body = await request.json();
+    const input = createMessageSchema.parse({ ...body, channelId: id });
+    const message = await createMessage(user.id, input);
+    return NextResponse.json({ message });
+  } catch (error) {
+    return errorResponse(error);
+  }
 }

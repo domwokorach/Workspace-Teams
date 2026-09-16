@@ -116,7 +116,7 @@ export function AllIssuesWorkspace({ issues }: { issues: AllIssuesRow[] }) {
   );
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] min-h-[480px] flex-col overflow-hidden rounded-lg border">
+    <div className="flex h-[calc(100vh-10rem)] min-h-[480px] flex-col overflow-hidden rounded-md border">
       <div className="flex shrink-0 items-center justify-end gap-1 border-b bg-muted/10 px-2 py-1">
         <ResetLayoutButton onReset={() => workspaceRef.current?.reset()} />
       </div>
