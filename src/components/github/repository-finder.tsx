@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { cn } from "cn";
 import { GitBranch, Search, Lock, Globe, Star, GitFork, CircleDot, ExternalLink, Download, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -71,7 +72,9 @@ export function RepositoryFinder({
             Connect GitHub to search your repositories, import one into this workspace, and sync issues, pull
             requests, and CI status.
           </p>
-          <Button render={<Link href="/api/github/connect" />}>Connect GitHub</Button>
+          <Link href="/api/github/connect" className={cn(buttonVariants())}>
+            Connect GitHub
+          </Link>
         </CardContent>
       </Card>
     );
@@ -183,9 +186,14 @@ export function RepositoryFinder({
                   <Button size="sm" onClick={() => setImportTarget(repo)}>
                     <Download /> Import
                   </Button>
-                  <Button size="sm" variant="outline" render={<a href={repo.htmlUrl} target="_blank" rel="noreferrer" />}>
+                  <a
+                    href={repo.htmlUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                  >
                     <ExternalLink /> View on GitHub
-                  </Button>
+                  </a>
                 </div>
               </CardContent>
             </Card>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { FolderGit2, Lock, Globe, Plus, Star, GitFork, CircleDot } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "cn";
 import { requireCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { getDefaultWorkspace } from "@/lib/workspace";
@@ -24,9 +25,9 @@ export default async function RepositoriesPage() {
           <h1 className="text-xl font-semibold tracking-tight">Repositories</h1>
           <p className="text-sm text-muted-foreground">Repositories imported into your workspace.</p>
         </div>
-        <Button render={<Link href="/repositories/find" />}>
+        <Link href="/repositories/find" className={cn(buttonVariants())}>
           <Plus /> Find a repository
-        </Button>
+        </Link>
       </div>
 
       {repos.length === 0 ? (
@@ -37,7 +38,9 @@ export default async function RepositoriesPage() {
             <p className="max-w-sm text-sm text-muted-foreground">
               Connect GitHub to import your first repository and start browsing code, issues, and pull requests.
             </p>
-            <Button render={<Link href="/repositories/find" />}>Find a repository</Button>
+            <Link href="/repositories/find" className={cn(buttonVariants())}>
+              Find a repository
+            </Link>
           </CardContent>
         </Card>
       ) : (

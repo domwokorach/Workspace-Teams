@@ -3,9 +3,10 @@
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GitBranch, CheckCircle2, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "cn";
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: "GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in your environment.",
@@ -68,9 +69,9 @@ export function GitHubSettings({ github }: { github: { username: string; connect
             </Button>
           </div>
         ) : (
-          <Button render={<a href="/api/github/connect" />}>
+          <a href="/api/github/connect" className={cn(buttonVariants())}>
             <GitBranch /> Connect GitHub
-          </Button>
+          </a>
         )}
       </CardContent>
     </Card>

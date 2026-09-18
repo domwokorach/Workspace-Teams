@@ -4,7 +4,7 @@ import * as React from "react";
 import { Loader2, GitCommit, GitPullRequest, CircleDot, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ResizableWorkspace } from "@/components/layout/resizable-workspace";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
@@ -37,9 +37,14 @@ function ContributorDetail({ contributor }: { contributor: Contributor }) {
           <p className="text-sm font-semibold">{contributor.login}</p>
           <p className="text-xs text-muted-foreground">@{contributor.login}</p>
         </div>
-        <Button size="sm" variant="outline" render={<a href={contributor.htmlUrl} target="_blank" rel="noreferrer" />}>
+        <a
+          href={contributor.htmlUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+        >
           <ExternalLink className="size-3.5" /> View on GitHub
-        </Button>
+        </a>
       </div>
 
       <div className="mt-6 space-y-3 text-sm">
