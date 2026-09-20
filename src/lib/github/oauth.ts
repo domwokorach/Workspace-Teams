@@ -16,6 +16,11 @@ export function isGitHubOAuthConfigured(): boolean {
   return !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
 }
 
+export function getGitHubRedirectUri(): string {
+  const appUrl = requireEnv("NEXT_PUBLIC_APP_URL");
+  return new URL("/api/github/callback", appUrl).toString();
+}
+
 export function buildGitHubAuthorizeUrl(state: string, redirectUri: string): string {
   const clientId = requireEnv("GITHUB_CLIENT_ID");
   const url = new URL(GITHUB_AUTHORIZE_URL);

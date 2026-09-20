@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { requireCurrentUser, AuthError } from "@/lib/auth/session";
-import { exchangeGitHubCode, fetchGitHubViewer } from "@/lib/github/oauth";
+import { exchangeGitHubCode, fetchGitHubViewer, getGitHubRedirectUri } from "@/lib/github/oauth";
 import { GITHUB_OAUTH_STATE_COOKIE } from "@/lib/github/oauth-state";
 import { encryptSecret } from "@/lib/auth/crypto";
 import { prisma } from "@/lib/db/client";
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const redirectUri = new URL("/api/github/callback", request.url).toString();
+    const redirectUri = getGitHubRedirectUri();
     const { accessToken, scope } = await exchangeGitHubCode(code, redirectUri);
     const viewer = await fetchGitHubViewer(accessToken);
 

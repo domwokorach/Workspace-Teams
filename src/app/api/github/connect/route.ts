@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCurrentUser, AuthError } from "@/lib/auth/session";
-import { buildGitHubAuthorizeUrl, isGitHubOAuthConfigured } from "@/lib/github/oauth";
+import { buildGitHubAuthorizeUrl, getGitHubRedirectUri, isGitHubOAuthConfigured } from "@/lib/github/oauth";
 import { GITHUB_OAUTH_STATE_COOKIE } from "@/lib/github/oauth-state";
 
 export async function GET(request: Request) {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   }
 
   const state = crypto.randomUUID();
-  const redirectUri = new URL("/api/github/callback", request.url).toString();
+  const redirectUri = getGitHubRedirectUri();
   const authorizeUrl = buildGitHubAuthorizeUrl(state, redirectUri);
 
   const res = NextResponse.redirect(authorizeUrl);
