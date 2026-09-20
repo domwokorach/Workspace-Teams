@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { LetterGlitch } from "@/components/ui/letter-glitch";
 import {
   Field,
   FieldDescription,
@@ -120,6 +121,10 @@ export function LoginScreen() {
 
   return (
     <main className="relative flex min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="absolute inset-0 z-0 opacity-[0.15]">
+        <LetterGlitch centerVignette smooth glitchSpeed={50} />
+      </div>
+
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.035]"
